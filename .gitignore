@@ -114,3 +114,5 @@ ENV/
 .ropeproject
 
 images/
+
+*.jpg
