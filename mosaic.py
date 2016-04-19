@@ -11,16 +11,6 @@ sample_images = []
 without_replacement = True
 
 
-def rename_to_average_colors(dir_path):
-    images = filter(lambda f: os.path.isfile(f), ["{}/{}".format(dir_path, f) for f in os.listdir(dir_path)])
-    for file in images:
-        image = Image.open(file)
-        color = mean_color(image)
-        sample_images.append((file, color))
-        image.close()
-        os.rename(file, "{dir_path}/#{:02X}{:02X}{:02X}{ext}".format(*color, ext=file[-4:], dir_path=dir_path))
-
-
 def load_images(dir_path):
     images = filter(lambda f: os.path.isfile(f), ["{}/{}".format(dir_path, f) for f in os.listdir(dir_path)])
     for file in images:
@@ -187,7 +177,7 @@ def get_closest_image_index(color):
     return smallest_index
 
 
-def mosaic(image, sub_image_size, reblend=0.3):
+def mosaic(image, sub_image_size, reblend=0.5):
     average_colors = get_average_color_matrix(image, sub_image_size)
     stitched = stitch_image_from_array(average_colors, image.size, sub_image_size, average_colors)
     return Image.blend(stitched, image, reblend)
