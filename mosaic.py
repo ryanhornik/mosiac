@@ -11,16 +11,22 @@ sample_images = []
 without_replacement = True
 
 
-def load_images(dir_path):
+def rename_to_average_colors(dir_path):
     images = filter(lambda f: os.path.isfile(f), ["{}/{}".format(dir_path, f) for f in os.listdir(dir_path)])
-    x = 0
     for file in images:
         image = Image.open(file)
-        sample_images.append((file, mean_color(image)))
+        color = mean_color(image)
+        sample_images.append((file, color))
         image.close()
-        if x % 1000 == 1:
-            print(x)
-        x += 1
+        os.rename(file, "{dir_path}/#{:02X}{:02X}{:02X}{ext}".format(*color, ext=file[-4:], dir_path=dir_path))
+
+
+def load_images(dir_path):
+    images = filter(lambda f: os.path.isfile(f), ["{}/{}".format(dir_path, f) for f in os.listdir(dir_path)])
+    for file in images:
+        color_hex = file.split('#')[-1][:-4]
+        color = (int(color_hex[:2], 16), int(color_hex[2:4], 16), int(color_hex[4:], 16))
+        sample_images.append((file, color))
 
 
 def color_distance(first, second):
@@ -109,8 +115,6 @@ def other_thread(full_width, sub_image_width, sub_image_height, average_color_ma
         closest_img_obj = Image.open(sample_images[closest_img_idx][0])
 
         closest_img_scaled = thumbnail_no_preserve_aspect(closest_img_obj, size=(sub_image_width, sub_image_height))
-        closest_img_obj.close()
-
         images_to_paste.append((closest_img_scaled, (i, j)))
 
 
@@ -154,8 +158,10 @@ def get_user_factor_selection(n, name):
     return n_factors[int(input("{}Select a factor for sub-image {}\n".format("" if (i+1) % 5 == 0 else "\n", name)))]
 
 
-def main(sample_directory, filename, output):
+def main(sample_directory, filename, output, scale=3):
     image = Image.open(filename)
+    if scale != 1:
+        image = image.resize((image.size[0]*scale, image.size[1]*scale))
     img_width, img_height = image.size
 
     load_images(sample_directory)
@@ -181,7 +187,7 @@ def get_closest_image_index(color):
     return smallest_index
 
 
-def mosaic(image, sub_image_size, reblend=0.5):
+def mosaic(image, sub_image_size, reblend=0.3):
     average_colors = get_average_color_matrix(image, sub_image_size)
     stitched = stitch_image_from_array(average_colors, image.size, sub_image_size, average_colors)
     return Image.blend(stitched, image, reblend)
